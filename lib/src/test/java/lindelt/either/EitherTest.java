@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 public class EitherTest {
     private final Either<String, Integer> right = Either.right(10);
     private final Either<String, Integer> left = Either.left("Foo");
+    final int rightHashCode = 971; // derived through manual calculation
+    final int leftHashCode = 2196443; // derived through manual calculation
 
     // ##################################################
     // # VERSION 0.1 TESTS
@@ -64,8 +66,8 @@ public class EitherTest {
     @DisplayName("Hash code generation")
     void testHashCode() {
         // magic numbers derived through manual calculation.
-        assertEquals(2196443, left.hashCode());
-        assertEquals(971, right.hashCode());
+        assertEquals(leftHashCode, left.hashCode());
+        assertEquals(rightHashCode, right.hashCode());
     }
 
     @Test
@@ -219,4 +221,37 @@ public class EitherTest {
         assertEquals(Optional.of(10), right.maybeRight());
         assertEquals(Optional.empty(), left.maybeRight());
     }
+
+    // ##################################################
+    // # VERSION 0.5 TESTS
+    // ##################################################
+
+
+    @Test
+    @DisplayName("Unconditional mapping")
+    void testMap() {
+        assertEquals("10", right.map((Object::toString)).getRight());
+        assertEquals("Foo".hashCode(), left.map(Object::hashCode).getLeft());
+        assertThrows(ClassCastException.class, () -> right.map(Thread::getName));
+        assertThrows(ClassCastException.class, () -> left.map(Thread::getName));
+        assertThrows(NullPointerException.class, () -> right.map(null));
+        assertThrows(NullPointerException.class, () -> left.map(null));
+    }
+
+    @Test
+    @DisplayName("Mapping onto the left value")
+    void testMapLeft() {
+        assertEquals(15.0, right.mapRight(x -> x * 1.5).getRight());
+        assertEquals("Foo", left.mapRight(x -> x * 1.5).getLeft());
+        assertThrows(NullPointerException.class, () -> right.mapRight(null));
+    }
+
+    @Test
+    @DisplayName("Mapping onto the left value")
+    void testMapRight() {
+        assertEquals("FOO", left.mapLeft(String::toUpperCase).getLeft());
+        assertEquals(10, right.mapLeft(String::toUpperCase).getRight());
+        assertThrows(NullPointerException.class, () -> left.mapLeft(null));
+    }
+
 }

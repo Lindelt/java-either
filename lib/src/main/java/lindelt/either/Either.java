@@ -379,6 +379,83 @@ public abstract class Either<L, R> {
     }
 
     // ##################################################
+    // # MAPPING METHODS
+    // ##################################################
+
+    /**
+     * Unconditionally maps a function onto the value held by this
+     * {@code Either}. Valid calls require {@code T} to be a supertype of
+     * both the left and right types of this {@code Either} (i.e. the mapping
+     * function must be contravariant to both {@code L} and {@code R}).
+     * 
+     * @param <T>    Parameter type of the mapping function
+     * @param <U>    Return type of the mapping function
+     * @param mapper Mapping function to be applied to the value held by this
+     *               {@code Either}.
+     * @return A left-holding {@code Either} if this {@code Either} holds a left
+     *         value, or a right-holding {@code Either} if this {@code Either}
+     *         holds a right value. The value held by the returned {@code Either}
+     *         is the result of applying the mapping function to the value held
+     *         by this {@code Either}.
+     * @throws ClassCastException   If the value held by this {@code Either}
+     *                              cannot be cast to {@code T}.
+     * @throws NullPointerException If the mapping function is {@code null} or
+     *                              returns {@code null}.
+     */
+    public <T, U> Either<U, U> map(Function<? super T, ? extends U> mapper) throws ClassCastException, NullPointerException {
+        U result = mapper.apply(foldCast());
+        return isRight() ? right(result) : left(result);
+    }
+
+    /**
+     * Gets a right-holding {@code Either} holding the result of applying
+     * the given mapping function to the right value held by this {@code Either}
+     * (as if by {@link #right(Object)}) if this {@code Either} holds a right
+     * value, otherwise gets a left-holding {@code Either} holding the left
+     * value of this {@code Either} (as if by {@link #left(Object)}).
+     * 
+     * @param <T>    Return type of the mapping function.
+     * @param mapper Mapping function to apply to the right value held by this
+     *               {@code Either}, if this {@code Either} holds a right value.
+     * @return A right-holding {@code Either} holding the result of applying
+     *         the mapping function to the right value of this {@code Either},
+     *         or a left-holding {@code Either} holding the left value of this
+     *         {@code Either}.
+     * @throws NullPointerException If this {@code Either} holds a right value
+     *                              and the mapping function is {@code null}
+     *                              or returns {@code null}.
+     * @since 0.5
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Either<L, T> mapRight(Function<? super R, ? extends T> mapper) throws NullPointerException {
+        return isRight() ? right(mapper.apply(getRight())) : (Either<L, T>) this;
+    }
+
+    /**
+     * Gets a left-holding {@code Either} holding the result of applying
+     * the given mapping function to the left value held by this {@code Either}
+     * (as if by {@link #left(Object)}) if this {@code Either} holds a left
+     * value, otherwise gets a right-holding {@code Either} holding the right
+     * value of this {@code Either} (as if by {@link #right(Object)}).
+     * 
+     * @param <T>    Return type of the mapping function.
+     * @param mapper Mapping function to apply to the left value held by this
+     *               {@code Either}, if this {@code Either} holds a left value.
+     * @return A left-holding {@code Either} holding the result of applying
+     *         the mapping function to the left value of this {@code Either},
+     *         or a right-holding {@code Either} holding the right value of this
+     *         {@code Either}.
+     * @throws NullPointerException If this {@code Either} holds a left value
+     *                              and the mapping function is {@code null}
+     *                              or returns {@code null}.
+     * @since 0.5
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Either<T, R> mapLeft(Function<? super L, ? extends T> mapper) throws NullPointerException {
+        return isLeft() ? left(mapper.apply(getLeft())) : (Either<T, R>) this;
+    }
+
+    // ##################################################
     // # FOLDING METHODS
     // ##################################################
 
@@ -398,7 +475,7 @@ public abstract class Either<L, R> {
      * @throws NullPointerException If the folding function is {@code null}.
      * @since 0.4
      */
-    public <T, U> U fold(Function<T, U> folder)
+    public <T, U> U fold(Function<? super T, ? extends U> folder)
     throws ClassCastException, NullPointerException {
         return folder.apply(foldCast());
     }
