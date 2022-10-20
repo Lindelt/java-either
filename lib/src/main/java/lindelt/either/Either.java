@@ -73,7 +73,8 @@ public abstract class Either<L, R> {
      * @return An {@code Either} holding a right value.
      * @throws NullPointerException If the provided value is {@code null}.
      */
-    public static <L, R> Either<L, R> right(final R right, final Class<L> leftType) throws NullPointerException {
+    public static <L, R> Either<L, R> right(final R right, final Class<L> leftType)
+    throws NullPointerException {
         return Either.right(right);
     }
 
@@ -116,7 +117,8 @@ public abstract class Either<L, R> {
      * @return An {@code Either} holding a left value.
      * @throws NullPointerException If the provided value is {@code null}.
      */
-    public static <L, R> Either<L, R> left(final L left, final Class<R> rightType) throws NullPointerException {
+    public static <L, R> Either<L, R> left(final L left, final Class<R> rightType)
+    throws NullPointerException {
         return Either.left(left);
     }
 
@@ -135,7 +137,8 @@ public abstract class Either<L, R> {
      *                              is {@code null}.
      * @since 0.2
      */
-    public static <L, R> Either<L, R> of(final Optional<R> maybe, final L fallback) throws NullPointerException {
+    public static <L, R> Either<L, R> of(final Optional<R> maybe, final L fallback)
+    throws NullPointerException {
         return maybe.isPresent() ? right(maybe.get()) : left(fallback);
     }
 
@@ -238,12 +241,104 @@ public abstract class Either<L, R> {
     public abstract R getRight() throws NoSuchElementException;
 
     /**
+     * Gets the right value held by this {@code Either} or a fallback value
+     * if this {@code Either} holds a left value.
+     * 
+     * @param fallback Fallback value to be returned if this {@code Either}
+     *                 holds a left value.
+     * @return The right value held by this {@code Either} or a fallback.
+     * @since 0.3
+     */
+    public R getRightOr(R fallback) {
+        return isRight() ? getRight() : fallback;
+    }
+
+    /**
+     * Gets the right value held by this {@code Either} or a fallback value
+     * if this {@code Either} holds a left value.
+     * 
+     * @param fallback Fallback supplier to be used if this {@code Either}
+     *                 holds a left value.
+     * @return The right value held by this {@code Either} or a fallback.
+     * @since 0.3
+     */
+    public R getRightOrElse(Supplier<? extends R> fallback) throws NullPointerException {
+        return isRight() ? getRight() : fallback.get();
+    }
+
+    /**
+     * Gets the right value held by this {@code Either}, or throws a supplied
+     * exception if this {@code Either} holds a left value.
+     * 
+     * @param <X>      Type of the exception to be thrown.
+     * @param supplier Supplier for an exception.
+     * @return The right value held by this {@code Either}.
+     * @throws NullPointerException If this {@code Either} holds a left value
+     *                              and the supplier is {@code null}.
+     * @throws X                    If this {@code Either} holds a left value.
+     * @since 0.3
+     */
+    public <X extends Throwable> R getRightOrThrow(Supplier<? extends X> supplier)
+    throws NullPointerException, X {
+        if (isRight()) {
+            return getRight();
+        }
+        throw supplier.get();
+    }
+
+    /**
      * Gets the left value held by this {@code Either}.
      * 
      * @return The left value held by this {@code Either}.
      * @throws NoSuchElementException If this {@code Either} holds a right value.
      */
     public abstract L getLeft() throws NoSuchElementException;
+
+    /**
+     * Gets the left value held by this {@code Either} or a fallback value
+     * if this {@code Either} holds a right value.
+     * 
+     * @param fallback Fallback value to be returned if this {@code Either}
+     *                 holds a right value.
+     * @return The left value held by this {@code Either} or a fallback.
+     * @since 0.3
+     */
+    public L getLeftOr(L fallback) {
+        return isLeft() ? getLeft() : fallback;
+    }
+
+    /**
+     * Gets the left value held by this {@code Either} or a fallback value
+     * if this {@code Either} holds a right value.
+     * 
+     * @param fallback Fallback supplier to be used if this {@code Either}
+     *                 holds a right value.
+     * @return The left value held by this {@code Either} or a fallback.
+     * @since 0.3
+     */
+    public L getLeftOrElse(Supplier<? extends L> fallback) throws NullPointerException {
+        return isLeft() ? getLeft() : fallback.get();
+    }
+
+    /**
+     * Gets the left value held by this {@code Either}, or throws a supplied
+     * exception if this {@code Either} holds a right value.
+     * 
+     * @param <X>      Type of the exception to be thrown.
+     * @param supplier Supplier for an exception.
+     * @return The left value held by this {@code Either}.
+     * @throws NullPointerException If this {@code Either} holds a right value
+     *                              and the supplier is {@code null}.
+     * @throws X                    If this {@code Either} holds a right value.
+     * @since 0.3
+     */
+    public <X extends Throwable> L getLeftOrThrow(Supplier<? extends X> supplier)
+    throws NullPointerException, X {
+        if (isLeft()) {
+            return getLeft();
+        }
+        throw supplier.get();
+    }
 
     /**
      * Compares the specified object with this {@code Either} for equality.
