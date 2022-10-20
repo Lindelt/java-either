@@ -455,7 +455,7 @@ public abstract class Either<L, R> {
      *                            cannot be cast to {@code T}.
      * @since 0.4
      */
-    public <T> T foldCast(Class<T> castType) throws ClassCastException {
+    public <T> T foldCast(Class<T> castType) throws ClassCastException, NullPointerException {
         return castType.cast(isRight() ? getRight() : getLeft());
     }
 

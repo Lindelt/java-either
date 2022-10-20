@@ -183,6 +183,7 @@ public class EitherTest {
     void testFoldCast() {
         assertThrows(ClassCastException.class, () -> right.foldCast(AutoCloseable.class));
         assertThrows(ClassCastException.class, () -> left.foldCast(Number.class));
+        assertThrows(NullPointerException.class, () -> right.foldCast(null));
     }
 
     @Test
