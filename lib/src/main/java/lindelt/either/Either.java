@@ -34,6 +34,10 @@ import java.util.function.*;
  */
 public abstract class Either<L, R> {
 
+    // ##################################################
+    // # CREATION METHODS
+    // ##################################################
+
     /**
      * Creates a new {@code Either} holding a right value.
      * 
@@ -214,6 +218,10 @@ public abstract class Either<L, R> {
     protected Either() {
     }
 
+    // ##################################################
+    // # CHECK METHODS
+    // ##################################################
+
     /**
      * Gets whether this {@code Either} holds a right value.
      * 
@@ -231,6 +239,10 @@ public abstract class Either<L, R> {
     public boolean isLeft() {
         return !isRight();
     }
+
+    // ##################################################
+    // # EXTRACTION METHODS
+    // ##################################################
 
     /**
      * Gets the right value held by this {@code Either}.
@@ -339,6 +351,10 @@ public abstract class Either<L, R> {
         }
         throw supplier.get();
     }
+
+    // ##################################################
+    // # INHERITED FROM OBJECT
+    // ##################################################
 
     /**
      * Compares the specified object with this {@code Either} for equality.
