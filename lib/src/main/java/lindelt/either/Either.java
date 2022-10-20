@@ -299,6 +299,19 @@ public abstract class Either<L, R> {
     }
 
     /**
+     * Gets an {@code Optional} describing the right value held by this
+     * {@code Either}, or an empty {@code Optional} if this {@code Either}
+     * holds a left value.
+     * 
+     * @return An {@code Optional} describing the right value held by this
+     *         {@code Either}, or an empty {@code Optional}.
+     * @since 0.4
+     */
+    public Optional<R> maybeRight() {
+        return isRight() ? Optional.of(getRight()) : Optional.empty();
+    }
+
+    /**
      * Gets the left value held by this {@code Either}.
      * 
      * @return The left value held by this {@code Either}.
@@ -350,6 +363,100 @@ public abstract class Either<L, R> {
             return getLeft();
         }
         throw supplier.get();
+    }
+
+    /**
+     * Gets an {@code Optional} describing the left value held by this
+     * {@code Either}, or an empty {@code Optional} if this {@code Either}
+     * holds a right value.
+     * 
+     * @return An {@code Optional} describing the left value held by this
+     *         {@code Either}, or an empty {@code Optional}.
+     * @since 0.4
+     */
+    public Optional<L> maybeLeft() {
+        return isLeft() ? Optional.of(getLeft()) : Optional.empty();
+    }
+
+    // ##################################################
+    // # FOLDING METHODS
+    // ##################################################
+
+    /**
+     * Unconditionally folds this {@code Either} into a single value via
+     * a folding function. Valid calls require {@code T} be a supertype
+     * of both the left and right types of this {@code Either} (i.e. the
+     * folding function must be contravariant to both {@code L} and {@code R}).
+     * 
+     * @param <T>    Parameter type of the folding function.
+     * @param <U>    Return type of the folding function.
+     * @param folder Folding function to be used.
+     * @return The result of applying the folding function to the value held by
+     *         this {@code Either}.
+     * @throws ClassCastException   If the value held by this {@code Either}
+     *                              cannot be cast to {@code T}
+     * @throws NullPointerException If the folding function is {@code null}.
+     * @since 0.4
+     */
+    public <T, U> U fold(Function<T, U> folder)
+    throws ClassCastException, NullPointerException {
+        return folder.apply(foldCast());
+    }
+
+    /**
+     * Conditionally folds this {@code Either} into a single value via
+     * left and right folding functions.
+     * 
+     * @param <T>         Return type of the folding operation.
+     * @param leftFolder  Function used if this {@code Either} holds a left value.
+     * @param rightFolder Function used if this {@code Either} holds a right value.
+     * @return The result of applying the appropriate folding function to the
+     *         value held by this {@code Either}.
+     * @throws NullPointerException If the selected folding function is
+     *                              {@code null}.
+     * @since 0.4
+     */
+    public <T> T fold(Function<? super L, ? extends T> leftFolder,
+                      Function<? super R, ? extends T> rightFolder)
+    throws NullPointerException {
+        return isRight() ? rightFolder.apply(getRight()) : leftFolder.apply(getLeft());
+    }
+
+    /**
+     * <p>
+     * Unconditionally folds this {@code Either} into a single value via
+     * type-cast operation.
+     * </p>
+     * 
+     * <p>
+     * This method is intended for internal applications where the result of the
+     * cast will be immediately used. For public access or delayed use, see
+     * {@link #foldCast(Class)}, which throws a {@link ClassCastException} on
+     * illegal casts.
+     * </p>
+     * 
+     * @param <T> Type to cast the value held by this {@code Either} to.
+     * @return The value held by this {@code Either} cast to {@code T}.
+     * @since 0.4
+     */
+    @SuppressWarnings("unchecked")
+    protected <T> T foldCast() {
+        return (T) (isRight() ? getRight() : getLeft());
+    }
+
+    /**
+     * Unconditionally folds the {@code Either} into a single value via
+     * type-cast operation.
+     * 
+     * @param <T>      Type to cast the value held by this {@code Either} to.
+     * @param castType Type to cast the value held by this {@code Either} to.
+     * @return The value held by this {@code Either} cast to {@code T}.
+     * @throws ClassCastException If the value held by this {@code Either}
+     *                            cannot be cast to {@code T}.
+     * @since 0.4
+     */
+    public <T> T foldCast(Class<T> castType) throws ClassCastException {
+        return castType.cast(isRight() ? getRight() : getLeft());
     }
 
     // ##################################################

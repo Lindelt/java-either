@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.DisplayName;
@@ -171,5 +172,50 @@ public class EitherTest {
         assertThrows(Error.class, () -> left.getRightOrThrow(Error::new));
         assertThrows(NullPointerException.class, () -> left.getRightOrThrow(null));
         assertThrows(NullPointerException.class, () -> left.getRightOrThrow(() -> null));
+    }
+
+    // ##################################################
+    // # VERSION 0.4 TESTS
+    // ##################################################
+
+    @Test
+    @DisplayName("Casting fold to invalid type")
+    void testFoldCast() {
+        assertThrows(ClassCastException.class, () -> right.foldCast(AutoCloseable.class));
+        assertThrows(ClassCastException.class, () -> left.foldCast(Number.class));
+    }
+
+    @Test
+    @DisplayName("Conditional folding")
+    void testFoldConditional() {
+        Function<Integer, Character> toHexUpper = i -> Character.toUpperCase(Character.forDigit(i, 16));
+        Function<String, Character> firstChar = s -> s.charAt(0);
+        assertEquals('A', right.fold(firstChar, toHexUpper));
+        assertEquals('F', left.fold(firstChar, toHexUpper));
+        assertThrows(NullPointerException.class, () -> right.fold(firstChar, null));
+        assertThrows(NullPointerException.class, () -> left.fold(null, toHexUpper));
+    }
+
+    @Test
+    @DisplayName("Unconditional folding")
+    void testFoldUnconditional() {
+        assertEquals(10, right.fold(Object::hashCode));
+        assertEquals("Foo".hashCode(), left.fold(Object::hashCode));
+        assertThrows(ClassCastException.class, () -> right.fold(Thread::getName));
+        assertThrows(NullPointerException.class, () -> left.fold(null));
+    }
+
+    @Test
+    @DisplayName("Optional left value retrieval")
+    void testMaybeLeft() {
+        assertEquals(Optional.of("Foo"), left.maybeLeft());
+        assertEquals(Optional.empty(), right.maybeLeft());
+    }
+
+    @Test
+    @DisplayName("Optional right value retrieval")
+    void testMaybeRight() {
+        assertEquals(Optional.of(10), right.maybeRight());
+        assertEquals(Optional.empty(), left.maybeRight());
     }
 }
