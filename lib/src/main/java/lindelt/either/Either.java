@@ -1,6 +1,7 @@
 package lindelt.either;
 
 import java.util.*;
+import java.util.function.*;
 
 /**
  * <p>
@@ -29,7 +30,7 @@ import java.util.*;
  * </p>
  * 
  * @author Andrew Bilsborough
- * @since 1.0
+ * @since 0.1
  */
 public abstract class Either<L, R> {
 
@@ -39,7 +40,7 @@ public abstract class Either<L, R> {
      * @param <L>   Type of the non-held left value.
      * @param <R>   Type of the held right value.
      * @param right Right value held by the {@code Either}.
-     * @return A new {@code Either} holding a right value.
+     * @return An {@code Either} holding a right value.
      * @throws NullPointerException If the provided value is {@code null}.
      */
     public static <L, R> Either<L, R> right(final R right) {
@@ -69,7 +70,7 @@ public abstract class Either<L, R> {
      * @param <R>      Type of the held right value.
      * @param right    Right value held by the {@code Either}.
      * @param leftType For type hinting.
-     * @return A new {@code Either} holding a right value.
+     * @return An {@code Either} holding a right value.
      * @throws NullPointerException If the provided value is {@code null}.
      */
     public static <L, R> Either<L, R> right(final R right, final Class<L> leftType) throws NullPointerException {
@@ -82,7 +83,7 @@ public abstract class Either<L, R> {
      * @param <L>  Type of the held left value.
      * @param <R>  Type of the non-held right value.
      * @param left Left value held by the {@code Either}.
-     * @return A new {@code Either} holding a left value.
+     * @return An {@code Either} holding a left value.
      * @throws NullPointerException If the provided value is {@code null}.
      */
     public static <L, R> Either<L, R> left(final L left) {
@@ -112,11 +113,96 @@ public abstract class Either<L, R> {
      * @param <R>       Type of the non-held right value.
      * @param left      Left value held by the {@code Either}.
      * @param rightType For type hinting.
-     * @return A new {@code Either} object holding a left value.
+     * @return An {@code Either} holding a left value.
      * @throws NullPointerException If the provided value is {@code null}.
      */
     public static <L, R> Either<L, R> left(final L left, final Class<R> rightType) throws NullPointerException {
         return Either.left(left);
+    }
+
+    /**
+     * Creates a new {@code Either} using an {@code Optional} and a fallback
+     * value.
+     * 
+     * @param <L>      Type of the left value.
+     * @param <R>      Type of the right value.
+     * @param maybe    {@code Optional} that may hold a right value.
+     * @param fallback Fallback left value.
+     * @return A right-holding {@code Either} if the {@code Optional} holds a
+     *         value, otherwise a left-holding {@code Either}.
+     * @throws NullPointerException If the {@code Optional} is {@code null}, or
+     *                              the {@code Optional} is empty and the fallback
+     *                              is {@code null}.
+     * @since 0.2
+     */
+    public static <L, R> Either<L, R> of(final Optional<R> maybe, final L fallback) throws NullPointerException {
+        return maybe.isPresent() ? right(maybe.get()) : left(fallback);
+    }
+
+    /**
+     * Creates a new {@code Either} using an {@code Optional} and a fallback
+     * supplier.
+     * 
+     * @param <L>      Type of the left value.
+     * @param <R>      Type of the right value.
+     * @param maybe    {@code Optional} that may hold a right value.
+     * @param fallback Fallback {@code Supplier} for a left value.
+     * @return A right-holding {@code Either} if the {@code Optional} holds a
+     *         value, otherwise a left-holding {@code Either}.
+     * @throws NullPointerException If the {@code Optional} is {@code null}, or
+     *                              the {@code Optional} is empty and the fallback
+     *                              is {@code null} or returns {@code null}.
+     * @since 0.2
+     */
+    public static <L, R> Either<L, R> of(final Optional<R> maybe, final Supplier<L> fallback)
+    throws NullPointerException {
+        return maybe.isPresent() ? right(maybe.get()) : left(fallback.get());
+    }
+
+    /**
+     * Creates a new right-holding {@code Either} using the value returned by
+     * the {@code Supplier}, or a left-holding {@code Either} containing an
+     * {@code Exception} if the {@code Supplier} throws.
+     * 
+     * @param <R>      Type of the right value.
+     * @param supplier {@code Supplier} producing a right value.
+     * @return An {@code Either} holding a right value if the {@code Supplier}
+     *         successfully returns a non-null value, otherwise a left-holding
+     *         {@code Either} containing an {@code Exception}.
+     * @since 0.2
+     */
+    public static <R> Either<Exception, R> of(final Supplier<R> supplier) {
+        Either<Exception, R> result;
+        try {
+            result = right(supplier.get());
+        } catch (Exception e) {
+            result = left(e);
+        }
+        return result;
+    }
+
+    /**
+     * Creates a new right-holding {@code Either} using the value returned by
+     * the {@code Supplier}, or a left-holding {@code Either} containing a
+     * {@code Throwable} if the {@code Supplier} throws. Similar to
+     * {@link #of(Supplier)}, but capable of holding {@code Error} or other
+     * throwable types.
+     * 
+     * @param <R>      Type of the right value.
+     * @param supplier {@code Supplier} producing a right value.
+     * @return An {@code Either} holding a right value if the {@code Supplier}
+     *         successfully returns a non-null value, otherwise a left-holding
+     *         {@code Either} containing an {@code Exception}.
+     * @since 0.2
+     */
+    public static <R> Either<Throwable, R> ofChecked(final Supplier<R> supplier) {
+        Either<Throwable, R> result;
+        try {
+            result = right(supplier.get());
+        } catch (Throwable e) {
+            result = left(e);
+        }
+        return result;
     }
 
     /**

@@ -6,13 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 public class EitherTest {
-    private final Either<String, Integer> left = Either.left("Foo");
     private final Either<String, Integer> right = Either.right(10);
+    private final Either<String, Integer> left = Either.left("Foo");
 
     @Test
     @DisplayName("Object equality")
@@ -56,5 +58,36 @@ public class EitherTest {
     void testToString() {
         assertEquals("Either.Right[10]", right.toString());
         assertEquals("Either.Left[Foo]", left.toString());
+    }
+
+    @Test
+    @DisplayName("Creation from Optional and value")
+    void testOfOptionalValue() {
+        assertTrue(Either.of(Optional.of(10), "Foo").equals(right));
+        assertTrue(Either.of(Optional.empty(), "Foo").equals(left));
+        assertThrows(NullPointerException.class, () -> Either.of(null, "Foo"));
+        assertThrows(NullPointerException.class, () -> Either.of(Optional.empty(), (Object) null));
+    }
+
+    @Test
+    @DisplayName("Creation from Optional and Supplier")
+    void testOfOptionalSupplier() {
+        assertTrue(Either.of(Optional.of(10), () -> "Foo").equals(right));
+        assertTrue(Either.of(Optional.empty(), () -> "Foo").equals(left));
+        assertThrows(NullPointerException.class, () -> Either.of(Optional.empty(), (Supplier<Object>) null));
+    }
+
+    @Test
+    @DisplayName("Creation from Supplier storing Exceptions")
+    void testOfSupplier() {
+        assertTrue(Either.of(() -> Integer.valueOf("A", 16)).equals(right));
+        assertTrue(NumberFormatException.class.isInstance(Either.of(() -> Integer.valueOf("X", 16)).getLeft()));
+    }
+
+    @Test
+    @DisplayName("Creation from Supplier storing Throwables")
+    void testOfChecked() {
+        assertTrue(Either.of(() -> Integer.valueOf("A", 16)).equals(right));
+        assertTrue(AssertionError.class.isInstance(Either.ofChecked(() -> { assert false; return 0; }).getLeft()));
     }
 }
