@@ -16,8 +16,11 @@ import org.junit.jupiter.api.Test;
 public class EitherTest {
     private final Either<String, Integer> right = Either.right(10);
     private final Either<String, Integer> left = Either.left("Foo");
-    final int rightHashCode = 971; // derived through manual calculation
-    final int leftHashCode = 2196443; // derived through manual calculation
+    private final Either<String, Integer> secondRight = Either.right(15);
+    private final Either<String, Integer> secondLeft = Either.left("Bar");
+    private final int rightHashCode = 971; // derived through manual calculation
+    private final int leftHashCode = 2196443; // derived through manual calculation
+
 
     // ##################################################
     // # VERSION 0.1 TESTS
@@ -29,9 +32,9 @@ public class EitherTest {
         assertTrue(right.equals(Either.right(10)));
         assertTrue(left.equals(Either.left("Foo")));
         assertFalse(right.equals(left));
-        assertFalse(right.equals(Either.right(15)));
+        assertFalse(right.equals(secondRight));
         assertFalse(left.equals(right));
-        assertFalse(left.equals(Either.left("Bar")));
+        assertFalse(left.equals(secondLeft));
     }
 
     @Test
@@ -191,8 +194,8 @@ public class EitherTest {
     @Test
     @DisplayName("Conditional folding")
     void testFoldConditional() {
-        Function<Integer, Character> toHexUpper = i -> Character.toUpperCase(Character.forDigit(i, 16));
-        Function<String, Character> firstChar = s -> s.charAt(0);
+        final Function<Integer, Character> toHexUpper = i -> Character.toUpperCase(Character.forDigit(i, 16));
+        final Function<String, Character> firstChar = s -> s.charAt(0);
         assertEquals('A', right.fold(firstChar, toHexUpper));
         assertEquals('F', left.fold(firstChar, toHexUpper));
         assertThrows(NullPointerException.class, () -> right.fold(firstChar, null));
@@ -226,7 +229,6 @@ public class EitherTest {
     // # VERSION 0.5 TESTS
     // ##################################################
 
-
     @Test
     @DisplayName("Unconditional mapping")
     void testMap() {
@@ -252,6 +254,67 @@ public class EitherTest {
         assertEquals("FOO", left.mapLeft(String::toUpperCase).getLeft());
         assertEquals(10, right.mapLeft(String::toUpperCase).getRight());
         assertThrows(NullPointerException.class, () -> left.mapLeft(null));
+    }
+
+    // ##################################################
+    // # VERSION 0.6 TESTS
+    // ##################################################
+
+    @Test
+    @DisplayName("Application with a left value")
+    void testApplyLeft() {
+        final Function<Integer, Function<Integer, Integer>> curryAdd = x -> y -> x + y;
+        assertEquals(25, right.applyRight(secondRight.mapRight(curryAdd)).getRight());
+        assertEquals("Bar", right.applyRight(secondLeft.mapRight(curryAdd)).getLeft());
+        assertEquals("Foo", left.applyRight(secondRight.mapRight(curryAdd)).getLeft());
+        assertEquals("Bar", left.applyRight(secondLeft.mapRight(curryAdd)).getLeft());
+        assertThrows(NullPointerException.class, () -> right.applyRight(null));
+        assertThrows(NullPointerException.class, () -> left.applyRight(null));
+    }
+
+    @Test
+    @DisplayName("Application with a right value")
+    void testApplyRight() {
+        final Function<String, Function<String, String>> curryConcat = x -> y -> x.concat(y);
+        assertEquals("BarFoo", left.applyLeft(secondLeft.mapLeft(curryConcat)).getLeft());
+        assertEquals(15, left.applyLeft(secondRight.mapLeft(curryConcat)).getRight());
+        assertEquals(10, right.applyLeft(left.mapLeft(curryConcat)).getRight());
+        assertEquals(15, right.applyLeft(secondRight.mapLeft(curryConcat)).getRight());
+        assertThrows(NullPointerException.class, () -> left.applyLeft(null));
+        assertThrows(NullPointerException.class, () -> right.applyLeft(null));
+    }
+
+    @Test
+    @DisplayName("Flat mapping with a left value")
+    void testFlatMapLeft() {
+        final Function<String, Either<Character, Integer>> charOrCodePoint = s -> {
+            final Character c = s.charAt(0);
+            if (Character.isSurrogate(c)) {
+                return Either.right(s.codePointAt(0));
+            } else {
+                return Either.left(c);
+            }
+        };
+
+        assertEquals('F', left.flatMapLeft(charOrCodePoint).getLeft());
+        assertEquals(10, right.flatMapLeft(charOrCodePoint).getRight());
+        assertThrows(NullPointerException.class, () -> left.flatMapLeft(null));
+    }
+
+    @Test
+    @DisplayName("Flat mapping with a right value")
+    void testFlatMapRight() {
+        final Function<Integer, Either<String, Double>> circleAreaFromRadius = r -> {
+            if (r <= 0) {
+                return Either.left("Negative radius");
+            } else {
+                return Either.right(r * r * Math.PI);
+            }
+        };
+
+        assertEquals(100 * Math.PI, right.flatMapRight(circleAreaFromRadius).getRight());
+        assertEquals("Foo", left.flatMapRight(circleAreaFromRadius).getLeft());
+        assertThrows(NullPointerException.class, () -> right.flatMapRight(null));
     }
 
 }

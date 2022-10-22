@@ -456,6 +456,124 @@ public abstract class Either<L, R> {
     }
 
     // ##################################################
+    // # APPLICATIVE METHODS
+    // ##################################################
+
+    /**
+     * Gets a right-holding {@code Either} holding the result of mapping the
+     * function held by the provided {@code Either} to the value held by this
+     * {@code Either} if both {@code Either} objects are right-holding,
+     * otherwise gets a left-holding {@code Either} holding either the left
+     * value of the provided {@code Either} if it is left-holding, or the left
+     * value of this {@code Either} if the provided {@code Either} is
+     * right-holding.
+     * 
+     * @param <T>         Return type of the applicative function.
+     * @param applicative An {@code Either} which may hold an applicative
+     *                    function.
+     * @return A right-holding {@code Either} if both {@code Either} objects
+     *         are right-holding, otherwise a left-holding {@code Either}
+     *         holding the left value of the provided {@code Either} or this
+     *         {@code Either}, in that order.
+     * @throws NullPointerException If the provided {@code Either} is
+     *                              {@code null}.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Either<L, T> applyRight(Either<? extends L, Function<? super R, ? extends T>> applicative)
+    throws NullPointerException {
+        Either<L, T> result;
+        if (applicative.isLeft()) {
+            result = (Either<L, T>) applicative;
+        } else if (isLeft()) {
+            result = (Either<L, T>) this;
+        } else {
+            result = right(applicative.getRight().apply(getRight()));
+        }
+        return result;
+    }
+
+    /**
+     * Gets a left-holding {@code Either} holding the result of mapping the
+     * function held by the provided {@code Either} to the value held by this
+     * {@code Either} if both {@code Either} objects are left-holding,
+     * otherwise gets a right-holding {@code Either} holding either the right
+     * value of the provided {@code Either} if it is right-holding, or the right
+     * value of this {@code Either} if the provided {@code Either} is
+     * left-holding.
+     * 
+     * @param <T>         Return type of the applicative function.
+     * @param applicative An {@code Either} which may hold an applicative
+     *                    function.
+     * @return A left-holding {@code Either} if both {@code Either} objects
+     *         are left-holding, otherwise a right-holding {@code Either}
+     *         holding the right value of the provided {@code Either} or this
+     *         {@code Either}, in that order.
+     * @throws NullPointerException If the provided {@code Either} is
+     *                              {@code null}.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Either<T, R> applyLeft(Either<Function<? super L, ? extends T>, ? extends R> applicative)
+    throws NullPointerException {
+        Either<T, R> result;
+        if (applicative.isRight()) {
+            result = (Either<T, R>) applicative;
+        } else if (isRight()) {
+            result = (Either<T, R>) this;
+        } else {
+            result = left(applicative.getLeft().apply(getLeft()));
+        }
+        return result;
+    }
+
+    // ##################################################
+    // # BINDING METHODS
+    // ##################################################
+
+    /**
+     * Gets the result of applying the mapping function to the right value held
+     * by this {@code Either} if this {@code Either} holds a right value,
+     * otherwise gets a left-holding {@code Either} containing the left value
+     * held by this {@code Either}.
+     * 
+     * @param <T>    Right type of the {@code Either} produced by the mapping
+     *               function.
+     * @param mapper Mapping function to apply to the right value held by this
+     *               {@code Either}.
+     * @return The result of applying the mapping function to the right value
+     *         held by this {@code Either}, or a left-holding {@code Either}
+     *         containing the left value held by this {@code Either}.
+     * @throws NullPointerException If this {@code Either} holds a right value
+     *                              and the mapping function is {@code null}.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Either<L, T> flatMapRight(Function<? super R, ? extends Either<? extends L, ? extends T>> mapper)
+    throws NullPointerException {
+        return (Either<L, T>) (isRight() ? mapper.apply(getRight()) : this);
+    }
+
+    /**
+     * Gets the result of applying the mapping function to the left value held
+     * by this {@code Either} if this {@code Either} holds a left value,
+     * otherwise gets a right-holding {@code Either} containing the right value
+     * held by this {@code Either}.
+     * 
+     * @param <T>    Left type of the {@code Either} produced by the mapping
+     *               function.
+     * @param mapper Mapping function to apply to the left value held by this
+     *               {@code Either}.
+     * @return The result of applying the mapping function to the left value
+     *         held by this {@code Either}, or a right-holding {@code Either}
+     *         containing the right value held by this {@code Either}.
+     * @throws NullPointerException If this {@code Either} holds a left value
+     *                              and the mapping function is {@code null}.
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Either<T, R> flatMapLeft(Function<? super L, ? extends Either<? extends T, ? extends R>> mapper)
+    throws NullPointerException {
+        return (Either<T, R>) (isLeft() ? mapper.apply(getLeft()) : this);
+    }
+
+    // ##################################################
     // # FOLDING METHODS
     // ##################################################
 
