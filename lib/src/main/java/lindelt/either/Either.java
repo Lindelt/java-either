@@ -47,7 +47,7 @@ public abstract class Either<L, R> {
      * @return An {@code Either} holding a right value.
      * @throws NullPointerException If the provided value is {@code null}.
      */
-    public static <L, R> Either<L, R> right(final R right) {
+    public static <L, R> Either<L, R> right(final R right) throws NullPointerException {
         Objects.requireNonNull(right);
         return new Either<L, R>() {
             @Override
@@ -91,7 +91,7 @@ public abstract class Either<L, R> {
      * @return An {@code Either} holding a left value.
      * @throws NullPointerException If the provided value is {@code null}.
      */
-    public static <L, R> Either<L, R> left(final L left) {
+    public static <L, R> Either<L, R> left(final L left) throws NullPointerException {
         Objects.requireNonNull(left);
         return new Either<L, R>() {
             @Override
@@ -402,7 +402,8 @@ public abstract class Either<L, R> {
      * @throws NullPointerException If the mapping function is {@code null} or
      *                              returns {@code null}.
      */
-    public <T, U> Either<U, U> map(Function<? super T, ? extends U> mapper) throws ClassCastException, NullPointerException {
+    public <T, U> Either<U, U> map(Function<? super T, ? extends U> mapper)
+    throws ClassCastException, NullPointerException {
         U result = mapper.apply(foldCast());
         return isRight() ? right(result) : left(result);
     }
