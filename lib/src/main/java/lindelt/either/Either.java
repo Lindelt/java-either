@@ -2,6 +2,7 @@ package lindelt.either;
 
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -478,6 +479,7 @@ public abstract class Either<L, R> {
      *         {@code Either}, in that order.
      * @throws NullPointerException If the provided {@code Either} is
      *                              {@code null}.
+     * @since 0.6
      */
     @SuppressWarnings("unchecked")
     public <T> Either<L, T> applyRight(Either<? extends L, Function<? super R, ? extends T>> applicative)
@@ -511,6 +513,7 @@ public abstract class Either<L, R> {
      *         {@code Either}, in that order.
      * @throws NullPointerException If the provided {@code Either} is
      *                              {@code null}.
+     * @since 0.6
      */
     @SuppressWarnings("unchecked")
     public <T> Either<T, R> applyLeft(Either<Function<? super L, ? extends T>, ? extends R> applicative)
@@ -545,6 +548,7 @@ public abstract class Either<L, R> {
      *         containing the left value held by this {@code Either}.
      * @throws NullPointerException If this {@code Either} holds a right value
      *                              and the mapping function is {@code null}.
+     * @since 0.6
      */
     @SuppressWarnings("unchecked")
     public <T> Either<L, T> flatMapRight(Function<? super R, ? extends Either<? extends L, ? extends T>> mapper)
@@ -567,11 +571,121 @@ public abstract class Either<L, R> {
      *         containing the right value held by this {@code Either}.
      * @throws NullPointerException If this {@code Either} holds a left value
      *                              and the mapping function is {@code null}.
+     * @since 0.6
      */
     @SuppressWarnings("unchecked")
     public <T> Either<T, R> flatMapLeft(Function<? super L, ? extends Either<? extends T, ? extends R>> mapper)
     throws NullPointerException {
         return (Either<T, R>) (isLeft() ? mapper.apply(getLeft()) : this);
+    }
+
+    // ##################################################
+    // # CONSUMPTION METHODS
+    // ##################################################
+
+    /**
+     * Unconditionally performs an action using the value held by this
+     * {@code Either}. Valid calls require {@code T} to be a supertype of
+     * both the left and right types of this {@code Either} (i.e. the consuming
+     * function must be contravariant to both {@code L} and {@code R}).
+     * 
+     * @param <T>      Parameter type of the action to perform.
+     * @param consumer Action to perform.
+     * @throws ClassCastException   If the value held by this {@code Either}
+     *                              cannot be cast to {@code T}.
+     * @throws NullPointerException If {@code consumer} is {@code null}.
+     * @since 0.7
+     */
+    public <T> void consume(Consumer<? super T> consumer)
+    throws ClassCastException, NullPointerException{
+        consumer.accept(this.<T>foldCast());
+    }
+
+    /**
+     * Conditionally performs an action using the value held by this
+     * {@code Either}.
+     * 
+     * @param leftConsumer  Action to perform if this {@code Either} holds a
+     *                      left value.
+     * @param rightConsumer Action to perform if this {@code Either} holds a
+     *                      right value.
+     * @throws NullPointerException If this {@code Either} holds a left value
+     *                              and {@code leftConsumer} is {@code null},
+     *                              or this {@code Either} holds a right value
+     *                              and {@code rightConsumer} is {@code null}.
+     * @since 0.7
+     */
+    public void consume(Consumer<? super L> leftConsumer, Consumer<? super R> rightConsumer)
+    throws NullPointerException {
+        if (isRight()) {
+            rightConsumer.accept(getRight());
+        } else {
+            leftConsumer.accept(getLeft());
+        }
+    }
+
+    /**
+     * Performs an action using the right value held by this {@code Either} if
+     * this {@code Either} holds a right value, otherwise does nothing.
+     * 
+     * @param consumer Action to perform.
+     * @throws NullPointerException If this {@code Either} holds a right value
+     *                              and {@code consumer} is {@code null}.
+     * @since 0.7
+     */
+    public void consumeRight(Consumer<? super R> consumer) throws NullPointerException {
+        consume((l) -> {}, consumer);
+    }
+
+    /**
+     * Performs an action using the left value held by this {@code Either} if
+     * this {@code Either} holds a left value, otherwise does nothing.
+     * 
+     * @param consumer Action to perform.
+     * @throws NullPointerException If this {@code Either} holds a left value
+     *                              and {@code consumer} is {@code null}.
+     * @since 0.7
+     */
+    public void consumeLeft(Consumer<? super L> consumer) throws NullPointerException {
+        consume(consumer, (r) -> {});
+    }
+
+    // ##################################################
+    // # STREAM EXTRACTION METHODS
+    // ##################################################
+
+    /**
+     * Creates a {@code Stream} holding the right value held by this
+     * {@code Either} if this {@code Either} holds a right value, otherwise
+     * creates an empty {@code Stream}.
+     * 
+     * @return A {@code Stream} containing the right value held by this
+     *         {@code Either}, or an empty {@code Stream}.
+     * @since 0.7
+     */
+    public Stream<R> streamRight() {
+        Stream.Builder<R> builder = Stream.builder();
+        if (isRight()) {
+            builder.accept(getRight());
+        }
+        return builder.build();
+    }
+
+    /**
+     * Creates a {@code Stream} holding the left value held by this
+     * {@code Either} if this {@code Either} holds a left value, otherwise
+     * creates an empty {@code Stream}.
+     * 
+     * @return A {@code Stream} containing the left value held by this
+     *         {@code Either}, or an empty {@code Stream}.
+     * @since 0.7
+     */
+    public Stream<L> streamLeft() {
+        Stream.Builder<L> builder = Stream.builder();
+        if (isLeft()) {
+            builder.accept(getLeft());
+        }
+        return builder.build();
     }
 
     // ##################################################

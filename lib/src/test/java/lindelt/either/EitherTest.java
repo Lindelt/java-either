@@ -5,8 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -317,4 +320,97 @@ public class EitherTest {
         assertThrows(NullPointerException.class, () -> right.flatMapRight(null));
     }
 
+    // ##################################################
+    // # VERSION 0.7 TESTS
+    // ##################################################
+
+    @Test
+    @DisplayName("Conditional consumption")
+    void testConsume() {
+        List<Integer> rights = new ArrayList<>();
+        List<String> lefts = new ArrayList<>();
+        Consumer<Integer> rightConsumer = i -> rights.add(i);
+        Consumer<String> leftConsumer = s -> lefts.add(s);
+
+        right.consume(leftConsumer, rightConsumer);
+        assertEquals(1, rights.size());
+        assertEquals(0, lefts.size());
+        assertEquals(10, rights.get(0));
+
+        left.consume(leftConsumer, rightConsumer);
+        assertEquals(1, rights.size());
+        assertEquals(1, lefts.size());
+        assertEquals("Foo", lefts.get(0));
+
+        assertThrows(NullPointerException.class, () -> right.consume(leftConsumer, null));
+        assertThrows(NullPointerException.class, () -> left.consume(null, rightConsumer));
+    }
+
+    @Test
+    @DisplayName("Unconditional consumption")
+    void testConsumeCast() {
+        List<Object> list = new ArrayList<>();
+        Consumer<Object> consumer = x -> list.add(x);
+
+        right.consume(consumer);
+        assertEquals(1, list.size());
+        assertEquals(10, list.get(0));
+
+        left.consume(consumer);
+        assertEquals(2, list.size());
+        assertEquals("Foo", list.get(1));
+
+        assertThrows(ClassCastException.class, () -> right.consume(Runnable::run));
+        assertThrows(ClassCastException.class, () -> left.consume(Thread::getId));
+        assertThrows(NullPointerException.class, () -> right.consume(null));
+        assertThrows(NullPointerException.class, () -> left.consume(null));
+    }
+
+    @Test
+    @DisplayName("Consume left value")
+    void testConsumeLeft() {
+        List<String> list = new ArrayList<>();
+        Consumer<String> consumer = s -> list.add(s);
+
+        right.consumeLeft(consumer);
+        assertEquals(0, list.size());
+
+        left.consumeLeft(consumer);
+        assertEquals(1, list.size());
+        assertEquals("Foo", list.get(0));
+
+        assertThrows(NullPointerException.class, () -> left.consumeLeft(null));
+    }
+
+    @Test
+    @DisplayName("Consume right value")
+    void testConsumeRight() {
+        List<Integer> list = new ArrayList<>();
+        Consumer<Integer> consumer = i -> list.add(i);
+
+        left.consumeRight(consumer);
+        assertEquals(0, list.size());
+
+        right.consumeRight(consumer);
+        assertEquals(1, list.size());
+        assertEquals(10, list.get(0));
+
+        assertThrows(NullPointerException.class, () -> right.consumeRight(null));
+    }
+
+    @Test
+    @DisplayName("Stream left value")
+    void testStreamLeft() {
+        assertEquals(0, right.streamLeft().toArray().length);
+        assertEquals(1, left.streamLeft().toArray().length);
+        assertEquals("Foo", left.streamLeft().toArray()[0]);
+    }
+
+    @Test
+    @DisplayName("Stream right value")
+    void testStreamRight() {
+        assertEquals(0, left.streamRight().toArray().length);
+        assertEquals(1, right.streamRight().toArray().length);
+        assertEquals(10, right.streamRight().toArray()[0]);
+    }
 }
