@@ -41,3 +41,41 @@ try {
     e.printStackTrace();
 }
 ```
+
+## Usage
+
+[It's on Maven Central](https://central.sonatype.dev/artifact/io.github.Lindelt/java-either/1.0.0)
+
+#### Maven
+```xml
+<dependency>
+    <groupId>io.github.Lindelt</groupId>
+    <artifactId>java-either</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+#### Gradle (Groovy)
+```groovy
+dependencies {
+    implementation 'io.github.Lindelt:java-either:1.0.0'
+}
+```
+
+#### Gradle (Kotlin)
+```kotlin
+dependencies {
+    implementation("io.github.Lindelt:java-either:1.0.0")
+}
+```
+
+### Create &amp; Use Eithers
+```java
+// Prints "{n} bottles of beer on the wall!" if input is an integer,
+// otherwise prints the input raised to all-caps.
+String userInput = ...;
+Either.lift(Integer::parseInt).apply(userInput)
+    .mapLeft(e -> userInput.toUpperCase())
+    .mapRight(i -> i + " bottles of beer on the wall!")
+    .consume(System.out::println, System.out::println);
+```
