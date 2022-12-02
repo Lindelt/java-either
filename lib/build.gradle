@@ -37,6 +37,13 @@ java {
     }
 }
 
+javadoc {
+    options {
+        links 'https://docs.oracle.com/javase/8/docs/api/'
+        stylesheetFile = new File(projectDir, "../dracula_javadoc.css")
+    }
+}
+
 group = 'io.github.Lindelt'
 version = '1.0.0'
 
