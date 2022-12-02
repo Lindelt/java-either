@@ -6,3 +6,6 @@ build
 
 # Ignore .vscode directory
 .vscode
+
+# Ignore local styling file
+dracula_javadoc.css
