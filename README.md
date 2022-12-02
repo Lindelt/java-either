@@ -69,13 +69,36 @@ dependencies {
 }
 ```
 
-### Create &amp; Use Eithers
+### Example Usage
 ```java
-// Prints "{n} bottles of beer on the wall!" if input is an integer,
-// otherwise prints the input raised to all-caps.
 String userInput = ...;
-Either.lift(Integer::parseInt).apply(userInput)
-    .mapLeft(e -> userInput.toUpperCase())
+
+// get with lift-apply...
+Either<Exception, Integer> parsed = Either.lift(Integer::parseInt)
+    .apply(userInput);
+
+// ...or get with supplier
+parsed = Either.of(() -> Integer.parseInt(userInput));
+
+// using checks
+if (parsed.isRight()) {
+    System.out.println(parsed.getRight() + " bottles of beer on the wall!");
+} else {
+    System.out.println(Objects.toString(userInput).toUpperCase());
+}
+
+// using map-consume
+parsed.mapLeft(e -> Objects.toString(userInput).toUpperCase())
     .mapRight(i -> i + " bottles of beer on the wall!")
     .consume(System.out::println, System.out::println);
+
+// using fold
+System.out.println(parsed.fold(e -> Objects.toString(userInput).toUpperCase(),
+    i -> i + " bottles of beer on the wall!"));
+
+// "5"    -> 5 bottles of beer on the wall!
+// "test" -> TEST
+// null   -> NULL
+// "0023" -> 23 bottles of beer on the wall!
+// "0.14" -> 0.14
 ```
