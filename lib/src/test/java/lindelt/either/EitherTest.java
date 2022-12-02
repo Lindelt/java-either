@@ -21,6 +21,8 @@ public class EitherTest {
     private final Either<String, Integer> left = Either.left("Foo");
     private final Either<String, Integer> secondRight = Either.right(15);
     private final Either<String, Integer> secondLeft = Either.left("Bar");
+    private final Function<String, Integer> parseHex = s -> Integer.valueOf(s, 16);
+    private final Function<Integer, Integer> assertPositive = i -> { assert i > 0; return i; };
     private final int rightHashCode = 971; // derived through manual calculation
     private final int leftHashCode = 2196443; // derived through manual calculation
 
@@ -119,14 +121,14 @@ public class EitherTest {
     @Test
     @DisplayName("Creation from Supplier storing Exceptions")
     void testOfSupplier() {
-        assertTrue(Either.of(() -> Integer.valueOf("A", 16)).equals(right));
-        assertTrue(NumberFormatException.class.isInstance(Either.of(() -> Integer.valueOf("X", 16)).getLeft()));
+        assertTrue(Either.of(() -> parseHex.apply("A")).equals(right));
+        assertTrue(NumberFormatException.class.isInstance(Either.of(() -> parseHex.apply("X")).getLeft()));
     }
 
     @Test
     @DisplayName("Creation from Supplier storing Throwables")
     void testOfChecked() {
-        assertTrue(Either.of(() -> Integer.valueOf("A", 16)).equals(right));
+        assertTrue(Either.of(() -> parseHex.apply("A")).equals(right));
         assertTrue(AssertionError.class.isInstance(Either.ofChecked(() -> { assert false; return 0; }).getLeft()));
     }
 
@@ -187,31 +189,22 @@ public class EitherTest {
     // ##################################################
 
     @Test
-    @DisplayName("Casting fold to invalid type")
+    @DisplayName("Casting fold to valid and invalid types")
     void testFoldCast() {
-        assertThrows(ClassCastException.class, () -> right.foldCast(AutoCloseable.class));
-        assertThrows(ClassCastException.class, () -> left.foldCast(Number.class));
+        assertTrue(() -> right.foldCast(Number.class).isPresent());
+        assertFalse(() -> left.foldCast(Number.class).isPresent());
         assertThrows(NullPointerException.class, () -> right.foldCast(null));
     }
 
     @Test
     @DisplayName("Conditional folding")
     void testFoldConditional() {
-        final Function<Integer, Character> toHexUpper = i -> Character.toUpperCase(Character.forDigit(i, 16));
-        final Function<String, Character> firstChar = s -> s.charAt(0);
+        Function<Integer, Character> toHexUpper = i -> Character.toUpperCase(Character.forDigit(i, 16));
+        Function<String, Character> firstChar = s -> s.charAt(0);
         assertEquals('A', right.fold(firstChar, toHexUpper));
         assertEquals('F', left.fold(firstChar, toHexUpper));
         assertThrows(NullPointerException.class, () -> right.fold(firstChar, null));
         assertThrows(NullPointerException.class, () -> left.fold(null, toHexUpper));
-    }
-
-    @Test
-    @DisplayName("Unconditional folding")
-    void testFoldUnconditional() {
-        assertEquals(10, right.fold(Object::hashCode));
-        assertEquals("Foo".hashCode(), left.fold(Object::hashCode));
-        assertThrows(ClassCastException.class, () -> right.fold(Thread::getName));
-        assertThrows(NullPointerException.class, () -> left.fold(null));
     }
 
     @Test
@@ -231,17 +224,6 @@ public class EitherTest {
     // ##################################################
     // # VERSION 0.5 TESTS
     // ##################################################
-
-    @Test
-    @DisplayName("Unconditional mapping")
-    void testMap() {
-        assertEquals("10", right.map((Object::toString)).getRight());
-        assertEquals("Foo".hashCode(), left.map(Object::hashCode).getLeft());
-        assertThrows(ClassCastException.class, () -> right.map(Thread::getName));
-        assertThrows(ClassCastException.class, () -> left.map(Thread::getName));
-        assertThrows(NullPointerException.class, () -> right.map(null));
-        assertThrows(NullPointerException.class, () -> left.map(null));
-    }
 
     @Test
     @DisplayName("Mapping onto the left value")
@@ -266,7 +248,7 @@ public class EitherTest {
     @Test
     @DisplayName("Application with a left value")
     void testApplyLeft() {
-        final Function<Integer, Function<Integer, Integer>> curryAdd = x -> y -> x + y;
+        Function<Integer, Function<Integer, Integer>> curryAdd = x -> y -> x + y;
         assertEquals(25, right.applyRight(secondRight.mapRight(curryAdd)).getRight());
         assertEquals("Bar", right.applyRight(secondLeft.mapRight(curryAdd)).getLeft());
         assertEquals("Foo", left.applyRight(secondRight.mapRight(curryAdd)).getLeft());
@@ -278,7 +260,7 @@ public class EitherTest {
     @Test
     @DisplayName("Application with a right value")
     void testApplyRight() {
-        final Function<String, Function<String, String>> curryConcat = x -> y -> x.concat(y);
+        Function<String, Function<String, String>> curryConcat = x -> y -> x.concat(y);
         assertEquals("BarFoo", left.applyLeft(secondLeft.mapLeft(curryConcat)).getLeft());
         assertEquals(15, left.applyLeft(secondRight.mapLeft(curryConcat)).getRight());
         assertEquals(10, right.applyLeft(left.mapLeft(curryConcat)).getRight());
@@ -290,8 +272,8 @@ public class EitherTest {
     @Test
     @DisplayName("Flat mapping with a left value")
     void testFlatMapLeft() {
-        final Function<String, Either<Character, Integer>> charOrCodePoint = s -> {
-            final Character c = s.charAt(0);
+        Function<String, Either<Character, Integer>> charOrCodePoint = s -> {
+            Character c = s.charAt(0);
             if (Character.isSurrogate(c)) {
                 return Either.right(s.codePointAt(0));
             } else {
@@ -307,7 +289,7 @@ public class EitherTest {
     @Test
     @DisplayName("Flat mapping with a right value")
     void testFlatMapRight() {
-        final Function<Integer, Either<String, Double>> circleAreaFromRadius = r -> {
+        Function<Integer, Either<String, Double>> circleAreaFromRadius = r -> {
             if (r <= 0) {
                 return Either.left("Negative radius");
             } else {
@@ -344,26 +326,6 @@ public class EitherTest {
 
         assertThrows(NullPointerException.class, () -> right.consume(leftConsumer, null));
         assertThrows(NullPointerException.class, () -> left.consume(null, rightConsumer));
-    }
-
-    @Test
-    @DisplayName("Unconditional consumption")
-    void testConsumeCast() {
-        List<Object> list = new ArrayList<>();
-        Consumer<Object> consumer = x -> list.add(x);
-
-        right.consume(consumer);
-        assertEquals(1, list.size());
-        assertEquals(10, list.get(0));
-
-        left.consume(consumer);
-        assertEquals(2, list.size());
-        assertEquals("Foo", list.get(1));
-
-        assertThrows(ClassCastException.class, () -> right.consume(Runnable::run));
-        assertThrows(ClassCastException.class, () -> left.consume(Thread::getId));
-        assertThrows(NullPointerException.class, () -> right.consume(null));
-        assertThrows(NullPointerException.class, () -> left.consume(null));
     }
 
     @Test
@@ -412,5 +374,34 @@ public class EitherTest {
         assertEquals(0, left.streamRight().toArray().length);
         assertEquals(1, right.streamRight().toArray().length);
         assertEquals(10, right.streamRight().toArray()[0]);
+    }
+
+    // ##################################################
+    // # VERSION 1.0 TESTS
+    // ##################################################
+
+    @Test
+    @DisplayName("Lift a function")
+    void testLift() {
+        assertEquals(0xBABE, Either.lift(parseHex).apply("BABE").getRight());
+        assertTrue(NumberFormatException.class.isInstance(Either.lift(parseHex).apply("FEAR").getLeft()));
+        assertThrows(NullPointerException.class, () -> Either.lift(null));
+        assertThrows(AssertionError.class, () -> Either.lift(assertPositive).apply(-1));
+    }
+
+    @Test
+    @DisplayName("Lift a checked function")
+    void testLiftChecked() {
+        assertEquals(1, Either.liftChecked(assertPositive).apply(1).getRight());
+        assertTrue(AssertionError.class.isInstance(Either.liftChecked(assertPositive).apply(-1).getLeft()));
+        assertThrows(NullPointerException.class, () -> Either.liftChecked(null));
+    }
+
+    @Test
+    @DisplayName("Perform a calculation using lift, apply, and map")
+    void multiMethodTest() {
+        Either<Exception, Integer> calculation = Either.lift(parseHex).apply("BABE")
+                .applyRight(Either.lift(parseHex).apply("CAFE").mapRight(x -> y -> x + y));
+        assertEquals(0x0001_85BC, calculation.getRight());
     }
 }

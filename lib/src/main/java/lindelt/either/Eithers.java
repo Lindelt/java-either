@@ -102,7 +102,7 @@ public final class Eithers {
      *         the collection of {@code Either} objects into its left and
      *         right values, or an empty partition if
      */
-    public static <L, R> Partition<L, R> partition(Collection<Either<L, R>> eithers)
+    public static <L, R> Partition<L, R> partition(Collection<? extends Either<? extends L, ? extends R>> eithers)
     throws NullPointerException {
         Partition<L, R> res = new Partition<>();
         if (eithers != null) {
@@ -124,7 +124,7 @@ public final class Eithers {
      * @throws NullPointerException If {@code eithers} is not {@code null} and
      *                              {@code partition} is {@code null}.
      */
-    public static <L, R> void partitionInto(Collection<Either<L, R>> eithers,
+    public static <L, R> void partitionInto(Collection<? extends Either<? extends L, ? extends R>> eithers,
                                             Partition<? super L, ? super R> partition)
     throws NullPointerException {
         if (eithers != null) {
@@ -164,7 +164,7 @@ public final class Eithers {
      *                                       collection due to insertion
      *                                       restrictions.
      */
-    public static <L, R> int partitionInto(Collection<Either<L, R>> eithers,
+    public static <L, R> int partitionInto(Collection<? extends Either<? extends L, ? extends R>> eithers,
                                            Collection<? super L> lefts,
                                            Collection<? super R> rights)
     throws NullPointerException, UnsupportedOperationException,

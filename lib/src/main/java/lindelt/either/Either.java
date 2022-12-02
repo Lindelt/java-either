@@ -27,13 +27,61 @@ import java.util.stream.Stream;
  * 
  * <p>
  * An {@code Either} used as in points (1) or (2) conventionally has a valid
- * value stored in a right-holding {@code Either} (mnemonic: right is correct).
+ * value stored as a right {@code Either} (mnemonic: right is correct).
  * </p>
  * 
  * @author Andrew Bilsborough
  * @since 0.1
  */
 public abstract class Either<L, R> {
+
+    // ##################################################
+    // # LIFTING METHODS
+    // ##################################################
+
+    /**
+     * Lifts a function to return an {@code Either} object. If the provided
+     * function returns successfully for a given input, the lifted function
+     * returns a right-holding {@code Either} holding the result of applying
+     * the provided function to said input, otherwise the lifted function
+     * returns a left-holding {@code Either} containing the {@code Exception}
+     * thrown by the provided function.
+     * 
+     * @param <T>      Input type of the provided function.
+     * @param <U>      Return type of the provided function.
+     * @param function Function to be lifted.
+     * @return A function that returns an {@code Either} object based upon
+     *         successful return from the provided function for a given input.
+     * @throws NullPointerException If the provided function is {@code null}.
+     * @since 1.0
+     */
+    public static <T, U> Function<T, Either<Exception, U>> lift(Function<? super T, ? extends U> function)
+    throws NullPointerException {
+        Objects.requireNonNull(function);
+        return arg -> Either.of(() -> function.apply(arg));
+    }
+
+    /**
+     * Lifts a function to return an {@code Either} object. If the provided
+     * function returns successfully for a given input, the lifted function
+     * returns a right-holding {@code Either} holding the result of applying
+     * the provided function to said input, otherwise the lifted function
+     * returns a left-holding {@code Either} containing the {@code Throwable}
+     * thrown by the provided function.
+     * 
+     * @param <T>      Input type of the provided function.
+     * @param <U>      Return type of the provided function.
+     * @param function Function to be lifted.
+     * @return A function that returns an {@code Either} object based upon
+     *         successful return from the provided function for a given input.
+     * @throws NullPointerException If the provided function is {@code null}.
+     * @since 1.0
+     */
+    public static <T, U> Function<T, Either<Throwable, U>> liftChecked(Function<? super T, ? extends U> function)
+    throws NullPointerException {
+        Objects.requireNonNull(function);
+        return arg -> Either.ofChecked(() -> function.apply(arg));
+    }
 
     // ##################################################
     // # CREATION METHODS
@@ -48,7 +96,7 @@ public abstract class Either<L, R> {
      * @return An {@code Either} holding a right value.
      * @throws NullPointerException If the provided value is {@code null}.
      */
-    public static <L, R> Either<L, R> right(final R right) throws NullPointerException {
+    public static <L, R> Either<L, R> right(R right) throws NullPointerException {
         Objects.requireNonNull(right);
         return new Either<L, R>() {
             @Override
@@ -78,8 +126,7 @@ public abstract class Either<L, R> {
      * @return An {@code Either} holding a right value.
      * @throws NullPointerException If the provided value is {@code null}.
      */
-    public static <L, R> Either<L, R> right(final R right, final Class<L> leftType)
-    throws NullPointerException {
+    public static <L, R> Either<L, R> right(R right, Class<L> leftType) throws NullPointerException {
         return Either.right(right);
     }
 
@@ -92,7 +139,7 @@ public abstract class Either<L, R> {
      * @return An {@code Either} holding a left value.
      * @throws NullPointerException If the provided value is {@code null}.
      */
-    public static <L, R> Either<L, R> left(final L left) throws NullPointerException {
+    public static <L, R> Either<L, R> left(L left) throws NullPointerException {
         Objects.requireNonNull(left);
         return new Either<L, R>() {
             @Override
@@ -122,8 +169,7 @@ public abstract class Either<L, R> {
      * @return An {@code Either} holding a left value.
      * @throws NullPointerException If the provided value is {@code null}.
      */
-    public static <L, R> Either<L, R> left(final L left, final Class<R> rightType)
-    throws NullPointerException {
+    public static <L, R> Either<L, R> left(L left, Class<R> rightType) throws NullPointerException {
         return Either.left(left);
     }
 
@@ -142,8 +188,7 @@ public abstract class Either<L, R> {
      *                              is {@code null}.
      * @since 0.2
      */
-    public static <L, R> Either<L, R> of(final Optional<R> maybe, final L fallback)
-    throws NullPointerException {
+    public static <L, R> Either<L, R> of(Optional<? extends R> maybe, L fallback) throws NullPointerException {
         return maybe.isPresent() ? right(maybe.get()) : left(fallback);
     }
 
@@ -162,7 +207,7 @@ public abstract class Either<L, R> {
      *                              is {@code null} or returns {@code null}.
      * @since 0.2
      */
-    public static <L, R> Either<L, R> of(final Optional<R> maybe, final Supplier<L> fallback)
+    public static <L, R> Either<L, R> of(Optional<? extends R> maybe, Supplier<? extends L> fallback)
     throws NullPointerException {
         return maybe.isPresent() ? right(maybe.get()) : left(fallback.get());
     }
@@ -179,7 +224,7 @@ public abstract class Either<L, R> {
      *         {@code Either} containing an {@code Exception}.
      * @since 0.2
      */
-    public static <R> Either<Exception, R> of(final Supplier<R> supplier) {
+    public static <R> Either<Exception, R> of(Supplier<? extends R> supplier) {
         Either<Exception, R> result;
         try {
             result = right(supplier.get());
@@ -203,7 +248,7 @@ public abstract class Either<L, R> {
      *         {@code Either} containing an {@code Exception}.
      * @since 0.2
      */
-    public static <R> Either<Throwable, R> ofChecked(final Supplier<R> supplier) {
+    public static <R> Either<Throwable, R> ofChecked(Supplier<? extends R> supplier) {
         Either<Throwable, R> result;
         try {
             result = right(supplier.get());
@@ -273,6 +318,8 @@ public abstract class Either<L, R> {
      * @param fallback Fallback supplier to be used if this {@code Either}
      *                 holds a left value.
      * @return The right value held by this {@code Either} or a fallback.
+     * @throws NullPointerException If this {@code Either} holds a left value
+     *                              and the fallback supplier is {@code null}.
      * @since 0.3
      */
     public R getRightOrElse(Supplier<? extends R> fallback) throws NullPointerException {
@@ -287,7 +334,7 @@ public abstract class Either<L, R> {
      * @param supplier Supplier for an exception.
      * @return The right value held by this {@code Either}.
      * @throws NullPointerException If this {@code Either} holds a left value
-     *                              and the supplier is {@code null}.
+     *                              and the exception supplier is {@code null}.
      * @throws X                    If this {@code Either} holds a left value.
      * @since 0.3
      */
@@ -340,6 +387,8 @@ public abstract class Either<L, R> {
      * @param fallback Fallback supplier to be used if this {@code Either}
      *                 holds a right value.
      * @return The left value held by this {@code Either} or a fallback.
+     * @throws NullPointerException If this {@code Either} holds a right value
+     *                              and the fallback supplier is {@code null}.
      * @since 0.3
      */
     public L getLeftOrElse(Supplier<? extends L> fallback) throws NullPointerException {
@@ -354,7 +403,7 @@ public abstract class Either<L, R> {
      * @param supplier Supplier for an exception.
      * @return The left value held by this {@code Either}.
      * @throws NullPointerException If this {@code Either} holds a right value
-     *                              and the supplier is {@code null}.
+     *                              and the exception supplier is {@code null}.
      * @throws X                    If this {@code Either} holds a right value.
      * @since 0.3
      */
@@ -382,32 +431,6 @@ public abstract class Either<L, R> {
     // ##################################################
     // # MAPPING METHODS
     // ##################################################
-
-    /**
-     * Unconditionally maps a function onto the value held by this
-     * {@code Either}. Valid calls require {@code T} to be a supertype of
-     * both the left and right types of this {@code Either} (i.e. the mapping
-     * function must be contravariant to both {@code L} and {@code R}).
-     * 
-     * @param <T>    Parameter type of the mapping function
-     * @param <U>    Return type of the mapping function
-     * @param mapper Mapping function to be applied to the value held by this
-     *               {@code Either}.
-     * @return A left-holding {@code Either} if this {@code Either} holds a left
-     *         value, or a right-holding {@code Either} if this {@code Either}
-     *         holds a right value. The value held by the returned {@code Either}
-     *         is the result of applying the mapping function to the value held
-     *         by this {@code Either}.
-     * @throws ClassCastException   If the value held by this {@code Either}
-     *                              cannot be cast to {@code T}.
-     * @throws NullPointerException If the mapping function is {@code null} or
-     *                              returns {@code null}.
-     */
-    public <T, U> Either<U, U> map(Function<? super T, ? extends U> mapper)
-    throws ClassCastException, NullPointerException {
-        U result = mapper.apply(foldCast());
-        return isRight() ? right(result) : left(result);
-    }
 
     /**
      * Gets a right-holding {@code Either} holding the result of applying
@@ -584,24 +607,6 @@ public abstract class Either<L, R> {
     // ##################################################
 
     /**
-     * Unconditionally performs an action using the value held by this
-     * {@code Either}. Valid calls require {@code T} to be a supertype of
-     * both the left and right types of this {@code Either} (i.e. the consuming
-     * function must be contravariant to both {@code L} and {@code R}).
-     * 
-     * @param <T>      Parameter type of the action to perform.
-     * @param consumer Action to perform.
-     * @throws ClassCastException   If the value held by this {@code Either}
-     *                              cannot be cast to {@code T}.
-     * @throws NullPointerException If {@code consumer} is {@code null}.
-     * @since 0.7
-     */
-    public <T> void consume(Consumer<? super T> consumer)
-    throws ClassCastException, NullPointerException{
-        consumer.accept(this.<T>foldCast());
-    }
-
-    /**
      * Conditionally performs an action using the value held by this
      * {@code Either}.
      * 
@@ -693,27 +698,6 @@ public abstract class Either<L, R> {
     // ##################################################
 
     /**
-     * Unconditionally folds this {@code Either} into a single value via
-     * a folding function. Valid calls require {@code T} be a supertype
-     * of both the left and right types of this {@code Either} (i.e. the
-     * folding function must be contravariant to both {@code L} and {@code R}).
-     * 
-     * @param <T>    Parameter type of the folding function.
-     * @param <U>    Return type of the folding function.
-     * @param folder Folding function to be used.
-     * @return The result of applying the folding function to the value held by
-     *         this {@code Either}.
-     * @throws ClassCastException   If the value held by this {@code Either}
-     *                              cannot be cast to {@code T}
-     * @throws NullPointerException If the folding function is {@code null}.
-     * @since 0.4
-     */
-    public <T, U> U fold(Function<? super T, ? extends U> folder)
-    throws ClassCastException, NullPointerException {
-        return folder.apply(foldCast());
-    }
-
-    /**
      * Conditionally folds this {@code Either} into a single value via
      * left and right folding functions.
      * 
@@ -733,40 +717,24 @@ public abstract class Either<L, R> {
     }
 
     /**
-     * <p>
-     * Unconditionally folds this {@code Either} into a single value via
-     * type-cast operation.
-     * </p>
-     * 
-     * <p>
-     * This method is intended for internal applications where the result of the
-     * cast will be immediately used. For public access or delayed use, see
-     * {@link #foldCast(Class)}, which throws a {@link ClassCastException} on
-     * illegal casts.
-     * </p>
-     * 
-     * @param <T> Type to cast the value held by this {@code Either} to.
-     * @return The value held by this {@code Either} cast to {@code T}.
-     * @since 0.4
-     */
-    @SuppressWarnings("unchecked")
-    protected <T> T foldCast() {
-        return (T) (isRight() ? getRight() : getLeft());
-    }
-
-    /**
      * Unconditionally folds the {@code Either} into a single value via
      * type-cast operation.
      * 
      * @param <T>      Type to cast the value held by this {@code Either} to.
-     * @param castType Type to cast the value held by this {@code Either} to.
-     * @return The value held by this {@code Either} cast to {@code T}.
-     * @throws ClassCastException If the value held by this {@code Either}
-     *                            cannot be cast to {@code T}.
+     * @param castType Class object of the type to cast the value held by this
+     *                 {@code Either} to.
+     * @return An {@code Optional} containing the value held by this
+     *         {@code Either} cast to {@code T} if the cast was successful,
+     *         otherwise an empty {@code Optional}.
+     * @throws NullPointerException If the provided class object is {@code null}.
      * @since 0.4
      */
-    public <T> T foldCast(Class<T> castType) throws ClassCastException, NullPointerException {
-        return castType.cast(isRight() ? getRight() : getLeft());
+    public <T> Optional<T> foldCast(Class<T> castType) throws NullPointerException {
+        try {
+            return Optional.of(castType.cast(isRight() ? getRight() : getLeft()));
+        } catch (ClassCastException e) {
+            return Optional.empty();
+        }
     }
 
     // ##################################################
@@ -786,14 +754,14 @@ public abstract class Either<L, R> {
      * @see #hashCode()
      */
     @Override
-    public boolean equals(final Object obj) {
+    public boolean equals(Object obj) {
         if (this == obj)
             return true;
         if (obj == null)
             return false;
         if (getClass() != obj.getClass())
             return false;
-        final Either<?, ?> other = (Either<?, ?>) obj;
+        Either<?, ?> other = (Either<?, ?>) obj;
         if (isRight() && other.isRight())
             return getRight().equals(other.getRight());
         if (isLeft() && other.isLeft())

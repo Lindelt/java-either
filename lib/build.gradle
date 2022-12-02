@@ -10,6 +10,8 @@ plugins {
     // Apply the java-library plugin for API and implementation separation.
     id 'java-library'
     id 'com.github.gregwhitaker.gitignore' version '2.2.0'
+    id 'signing'
+    id 'maven-publish'
 }
 
 repositories {
@@ -35,4 +37,50 @@ java {
     }
 }
 
-version = '0.8.0'
+group = 'io.github.Lindelt'
+version = '1.0.0'
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'java-either'
+            pom {
+                name = 'java-either'
+                description = 'A generalized binary summation type for Java8+'
+                url = 'http://github.com/Lintelt/java-either'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/mit-license.php'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'Lindelt'
+                        name = 'Andrew Bilsborough'
+                        email = 'ajbilsborough@gmail.com'
+                        url = 'https://github.com/Lindelt'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/Lindelt/java-either.git'
+                    developerConnection = 'scm:git:ssh://github.com/Lindelt/java-either.git'
+                    url = "http://github.com/Lindelt/java-either"
+                }
+            }
+            from components.java
+        }
+    }
+
+    repositories {
+        // Send to a local repository for now, will point to remote later
+        maven {
+            name = 'testRepo'
+            url = layout.buildDirectory.dir('repo')
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}

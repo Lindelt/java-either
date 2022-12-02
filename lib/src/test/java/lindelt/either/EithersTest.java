@@ -94,10 +94,10 @@ public class EithersTest {
     @Test
     @DisplayName("Partition into collections")
     void testPartitionIntoCollections() {
-        final List<String> lefts = new ArrayList<>();
-        final List<Integer> rights = new ArrayList<>();
+        List<String> lefts = new ArrayList<>();
+        List<Integer> rights = new ArrayList<>();
         
-        final List<Either<String, Integer>> input = new ArrayList<>(list);
+        List<Either<String, Integer>> input = new ArrayList<>(list);
         input.add(null);
 
         assertEquals(1, Eithers.partitionInto(input, lefts, rights));
